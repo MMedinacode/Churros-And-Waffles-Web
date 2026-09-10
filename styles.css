@@ -24,6 +24,9 @@
   --max:1160px;
 }
 *{ box-sizing:border-box; }
+/* Sin esto, cualquier .pill o .status-line con display propio le gana
+   al display:none que trae [hidden] en la hoja del navegador. */
+[hidden]{ display:none !important; }
 html{ scroll-behavior:smooth; }
 body{
   margin:0; background:var(--crema); color:var(--tinta); font-family:var(--font-body);

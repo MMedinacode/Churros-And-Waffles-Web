@@ -231,7 +231,14 @@ function actualizarEstado(dotId, textId) {
   const ahora   = new Date();
   const minutos = ahora.getHours() * 60 + ahora.getMinutes();
   const h       = horarioDeHoy();
-  const abierto = !!h && minutos >= h[0] && minutos < h[1];
+  if (!h) {
+    // Sin horario publicado: se esconde la pildora entera en vez de
+    // afirmar que esta cerrado, cosa que no nos consta.
+    const caja = text.closest('.pill, .status-line') || text.parentElement;
+    if (caja) caja.hidden = true;
+    return;
+  }
+  const abierto = minutos >= h[0] && minutos < h[1];
   text.textContent = abierto ? 'Abierto ahora' : 'Cerrado ahora';
   dot.classList.toggle('closed', !abierto);
 }
