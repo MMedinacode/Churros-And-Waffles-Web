@@ -11,7 +11,7 @@
 
 <!-- Tarjeta al compartir el link (WhatsApp, Instagram, correo). -->
 <meta name="theme-color" content="#D8384B">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23D8384B'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia,serif' font-size='40' font-weight='bold' fill='%23F4F2EE'%3EC%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="fotos/logo.jpg" type="image/jpeg">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="es_CL">
 <meta property="og:site_name" content="Churros and Waffles">
@@ -63,6 +63,12 @@
   - La foto de la fachada sale de un video de Instagram, así que está algo blanda.
   -   Pedirles una foto buena del local y del letrero de neón.
   - Faltan fotos propias de los helados, milkshakes y del Ice Rolls Cream.
+
+  ✅ ACTUALIZADO (10-09-2026, noche) — a pedido directo de Matías:
+  - LOGO REAL agregado en fotos/logo.jpg (antes era un ícono genérico de
+    cono de churro). Reemplaza el placeholder en header, loader y footer.
+  - HORARIO CONFIRMADO por Matías: Lunes a domingo, 16:30 a 21:30. Se quitó
+    la nota de "conviene confirmar la hora de apertura" porque ya no aplica.
   ============================================================
 -->
 
@@ -75,7 +81,7 @@
 
 <div id="loader">
   <div class="loader-marca" aria-hidden="true">
-    <svg viewBox="0 0 64 64" width="48" height="48"><path d="M10 22h34v18a14 14 0 0 1-14 14h-6a14 14 0 0 1-14-14z" fill="currentColor"/></svg>
+    <img src="fotos/logo.jpg" alt="" width="64" height="64">
   </div>
 </div>
 
@@ -83,7 +89,7 @@
   <div class="header-inner">
     <button class="brand" data-tab="inicio">
       <span class="brand-ico" aria-hidden="true">
-        <svg viewBox="0 0 64 64" width="22" height="22"><path d="M10 22h34v18a14 14 0 0 1-14 14h-6a14 14 0 0 1-14-14z" fill="currentColor"/></svg>
+        <img src="fotos/logo.jpg" alt="" width="34" height="34">
       </span>
       <span class="brand-name">Churros and Waffles</span>
     </button>
@@ -282,13 +288,14 @@
             <div>
               <strong>Horario</strong>
               <span>Todos los días de 16:30 a 21:30</span>
-              <span class="nota-fuente">Horario según su propio Instagram, que lo escribe como &laquo;4:30 a 21:30&raquo; — conviene confirmar la hora de apertura.</span>
+              <span class="dato-status"><span class="status-dot" id="statusDot3"></span><span id="statusText3">Consultando horario…</span></span>
             </div>
           </div>
-          <div class="dato">
+          <a class="dato dato-link" href="https://wa.me/56944722798" target="_blank" rel="noopener">
             <span class="dato-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg></span>
-            <div><strong>+56 9 4472 2798</strong><span>WhatsApp y teléfono</span></div>
-          </div>
+            <div><strong>+56 9 4472 2798</strong><span>WhatsApp y teléfono · toca para escribir</span></div>
+            <span class="dato-flecha" aria-hidden="true">→</span>
+          </a>
           <div class="visitanos-ctas">
             <a class="btn btn-solid" href="https://wa.me/56944722798" target="_blank" rel="noopener">Escribir por WhatsApp</a>
             <a class="btn btn-ghost" href="https://www.google.com/maps/dir/?api=1&destination=Churros+and+waffles+San+Bernardo&destination_place_id=0x9662d97c71887857:0xbae8899acdaf3f5c" target="_blank" rel="noopener">Cómo llegar</a>
@@ -312,7 +319,10 @@
 <footer class="site-footer">
   <div class="wrap footer-inner">
     <div>
-      <span class="brand-name footer-brand">Churros and Waffles</span>
+      <span class="footer-brand-row">
+        <img src="fotos/logo.jpg" alt="" width="34" height="34" class="footer-logo">
+        <span class="brand-name footer-brand">Churros and Waffles</span>
+      </span>
       <p>Los Suspiros 16358 · San Bernardo, Región Metropolitana</p>
       <p class="status-line"><span class="status-dot" id="statusDot2"></span> <span id="statusText2">—</span></p>
     </div>

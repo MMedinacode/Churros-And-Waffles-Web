@@ -219,7 +219,8 @@ document.getElementById('navToggle').addEventListener('click', function () {
 });
 
 /* ---------- INDICADOR ABIERTO / CERRADO ----------
-   Su Instagram dice 'LUNES a DOMINGO 4:30 a 21:30'. Como el cierre viene en formato de 24 h, se interpreta la apertura como las 16:30 (una churrería no abre a las 4:30 de la madrugada). CONFIRMAR con el local. Google no publica horario porque la ficha ni siquiera está reclamada. */
+   Horario confirmado por Matías (10-09-2026): todos los días, 16:30 a 21:30.
+   Google no publica horario porque la ficha ni siquiera está reclamada. */
 function horarioDeHoy() {
   return [16 * 60 + 30, 21 * 60 + 30];
 }
@@ -245,6 +246,7 @@ function actualizarEstado(dotId, textId) {
 
 actualizarEstado('statusDot', 'statusText');
 actualizarEstado('statusDot2', 'statusText2');
+actualizarEstado('statusDot3', 'statusText3');
 
 /* ---------- SCROLL REVEAL (con red de seguridad) ---------- */
 function initScrollReveal() {
