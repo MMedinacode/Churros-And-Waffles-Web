@@ -225,14 +225,27 @@ h1,h2,h3{ font-family:var(--font-display); font-weight:400; line-height:1.14; }
 .promedio-stars{ color:var(--segundo); font-size:1.4rem; letter-spacing:.14em; margin:8px 0 16px; }
 .promedio-txt{ color:var(--tinta-suave); margin:0 0 26px; font-size:.97rem; }
 
-.visitanos-grid{ display:grid; grid-template-columns:1fr 1.05fr; gap:48px; align-items:start; }
-.dato{ display:flex; align-items:flex-start; gap:15px; margin-bottom:26px; }
+/* ---------- VISÍTANOS ----------
+   Las tres tarjetas van en una FILA, no apiladas en una columna. En un grid
+   todas las celdas de la misma fila miden lo mismo de alto, así que ya no
+   importa que una tenga tres líneas de horario y otra solo dos de dirección:
+   quedan parejas solas. Antes, apiladas, medían 188px, 366px y 164px. */
+.visitanos-datos{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:16px; margin-bottom:26px;
+}
+
+.dato{
+  display:flex; flex-direction:column; gap:13px; padding:24px 22px;
+  background:var(--papel); border:1px solid var(--crema-osc);
+  border-radius:var(--radio); transition:border-color .2s ease, transform .15s ease;
+}
 .dato-ico{
   width:44px; height:44px; border-radius:13px; flex:0 0 44px; background:var(--suave);
   color:var(--acento); display:flex; align-items:center; justify-content:center; overflow:hidden;
 }
 .dato-ico svg{ width:21px; height:21px; display:block; flex:0 0 auto; }
-.dato strong{ display:block; color:var(--tinta); }
+.dato strong{ display:block; color:var(--tinta); font-size:1.02rem; }
 .dato span{ display:block; color:var(--tinta-suave); font-size:.92rem; }
 .dato-status{ display:flex !important; align-items:center; gap:7px; margin-top:4px; font-size:.87rem; font-weight:700; }
 .dato-status .status-dot{ width:8px; height:8px; }
@@ -254,10 +267,25 @@ h1,h2,h3{ font-family:var(--font-display); font-weight:400; line-height:1.14; }
   transition:transform .18s ease; flex:0 0 auto;
 }
 .dato-link:hover .dato-flecha{ transform:translateX(4px); }
+/* El ícono va arriba de la tarjeta, no al lado: en columnas angostas el
+   texto necesita todo el ancho disponible. */
+.dato-ico{ margin-bottom:2px; }
+.dato-link{
+  text-decoration:none; color:inherit; cursor:pointer;
+  /* Este proyecto trae una .dato-link propia, escrita antes del rediseño,
+     con su propio padding y margin. Se reponen los de .dato para que esta
+     tarjeta mida lo mismo que las otras dos de la fila. */
+  align-items:stretch; padding:24px 22px; margin-bottom:0;
+}
+.dato-link:hover{ border-color:var(--acento); background:var(--suave); }
+.dato-link:active{ transform:scale(.98); }
+.dato .dato-status{ margin:auto 0 0; padding-top:10px; }
+.dato .dato-status .status-dot{ display:inline-block; }
+.dato .dato-status span:not(.status-dot){ display:inline; font-weight:600; color:var(--tinta); }
 .visitanos-ctas{ display:flex; flex-wrap:wrap; gap:11px; margin-top:30px; }
 .map-frame{
   border-radius:var(--radio-g); overflow:hidden; box-shadow:var(--sombra-alta);
-  border:1px solid var(--crema-osc); height:430px;
+  border:1px solid var(--crema-osc); height:440px;
 }
 .map-frame iframe{ width:100%; height:100%; border:0; display:block; }
 
@@ -295,8 +323,8 @@ h1,h2,h3{ font-family:var(--font-display); font-weight:400; line-height:1.14; }
 .hero-content .reveal.in{ transform:none; }
 
 @media (max-width:900px){
-  .nosotros-grid,.visitanos-grid{ grid-template-columns:1fr; gap:34px; }
-  .map-frame{ height:330px; }
+  .nosotros-grid{ grid-template-columns:1fr; gap:34px; }
+  .map-frame{ height:300px; }
 }
 @media (max-width:780px){
   .nav-toggle{ display:flex; }
