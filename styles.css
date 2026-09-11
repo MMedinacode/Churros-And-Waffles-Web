@@ -226,66 +226,65 @@ h1,h2,h3{ font-family:var(--font-display); font-weight:400; line-height:1.14; }
 .promedio-txt{ color:var(--tinta-suave); margin:0 0 26px; font-size:.97rem; }
 
 /* ---------- VISÍTANOS ----------
-   Las tres tarjetas van en una FILA, no apiladas en una columna. En un grid
-   todas las celdas de la misma fila miden lo mismo de alto, así que ya no
-   importa que una tenga tres líneas de horario y otra solo dos de dirección:
-   quedan parejas solas. Antes, apiladas, medían 188px, 366px y 164px. */
-.visitanos-datos{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-  gap:16px; margin-bottom:26px;
+   Sin recuadros, a propósito. Las tarjetas con borde no quedaban parejas
+   nunca: una caja obliga a su vecina a medir lo mismo, y una dirección de
+   dos líneas no mide lo mismo que un horario de siete. Ahora la información
+   es una columna de bloques separados por una línea fina, a la izquierda,
+   y el mapa vuelve a la derecha. Sin cajas no hay nada que cuadrar. */
+.visitanos-wrap{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.04fr);
+  gap:46px; align-items:stretch;
 }
+.visitanos-info{ display:flex; flex-direction:column; }
+.info-bloque{ padding:24px 0; border-top:1px solid var(--crema-osc); }
+.info-bloque:first-child{ padding-top:0; border-top:0; }
+.info-bloque:last-child{ padding-bottom:0; }
+.info-titulo{
+  display:flex; align-items:center; gap:9px; margin:0 0 14px;
+  font-size:.74rem; letter-spacing:.15em; text-transform:uppercase;
+  font-weight:700; color:var(--tinta-suave);
+}
+.info-titulo svg{ width:16px; height:16px; flex:0 0 auto; color:var(--acento); }
+.info-dir{ margin:0; font-size:1.18rem; font-weight:600; color:var(--tinta); line-height:1.35; }
+.info-sub{ margin:5px 0 0; color:var(--tinta-suave); font-size:.95rem; line-height:1.5; }
+.info-estado{ margin:0 0 14px; font-weight:700; color:var(--tinta); font-size:.95rem; }
 
-.dato{
-  display:flex; flex-direction:column; gap:13px; padding:24px 22px;
-  background:var(--papel); border:1px solid var(--crema-osc);
-  border-radius:var(--radio); transition:border-color .2s ease, transform .15s ease;
+/* El horario va día por día, de lunes a domingo, y el de hoy queda
+   marcado solo (lo hace el JS al cargar). */
+.horario-semana{ list-style:none; margin:0; padding:0; }
+.horario-semana li{
+  display:flex; justify-content:space-between; align-items:baseline; gap:18px;
+  padding:8px 0; border-bottom:1px solid var(--crema-osc);
+  font-size:.95rem; color:var(--tinta-suave);
 }
-.dato-ico{
-  width:44px; height:44px; border-radius:13px; flex:0 0 44px; background:var(--suave);
-  color:var(--acento); display:flex; align-items:center; justify-content:center; overflow:hidden;
+.horario-semana li:last-child{ border-bottom:0; }
+.hs-hora{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.hs-cerrado{ font-style:italic; opacity:.75; }
+.horario-semana li.hs-hoy{ color:var(--tinta); font-weight:700; }
+.horario-semana li.hs-hoy .hs-dia::after{
+  content:"hoy"; margin-left:9px; padding:2px 8px; border-radius:999px;
+  background:var(--acento); color:var(--sobre-acento,#fff);
+  font-size:.62rem; font-weight:700; letter-spacing:.09em;
+  text-transform:uppercase; vertical-align:2px;
 }
-.dato-ico svg{ width:21px; height:21px; display:block; flex:0 0 auto; }
-.dato strong{ display:block; color:var(--tinta); font-size:1.02rem; }
-.dato span{ display:block; color:var(--tinta-suave); font-size:.92rem; }
-.dato-status{ display:flex !important; align-items:center; gap:7px; margin-top:4px; font-size:.87rem; font-weight:700; }
-.dato-status .status-dot{ width:8px; height:8px; }
+.horario-parcial li{ justify-content:flex-start; }
 
-/* Botón de contacto (WhatsApp/teléfono): antes era texto plano, ahora es
-   una tarjeta clicable con hover, para que no se vea "perdido" al lado de
-   los demás datos. */
-.dato-link{
-  text-decoration:none; align-items:center;
-  background:var(--papel); border:1px solid var(--crema-osc); border-radius:var(--radio);
-  padding:13px 16px; margin-bottom:26px;
-  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+.visitanos-ctas{ display:flex; flex-wrap:wrap; gap:11px; }
+
+.redes-lista{ display:flex; flex-wrap:wrap; gap:9px; }
+.red-link{
+  display:inline-flex; align-items:center; gap:8px; box-sizing:border-box;
+  min-height:44px; padding:11px 16px;
+  border:1px solid var(--crema-osc); border-radius:999px;
+  color:var(--tinta); text-decoration:none; font-size:.9rem; font-weight:600;
+  transition:border-color .2s ease, color .2s ease, background .2s ease;
 }
-.dato-link .dato-ico{ background:var(--crema-osc); }
-.dato-link:hover{ transform:translateY(-3px); box-shadow:var(--sombra); border-color:var(--acento); background:var(--suave); }
-.dato-link:hover .dato-ico{ background:var(--acento); color:#17130A; }
-.dato-flecha{
-  margin-left:auto; color:var(--acento); font-size:1.2rem; font-weight:700;
-  transition:transform .18s ease; flex:0 0 auto;
-}
-.dato-link:hover .dato-flecha{ transform:translateX(4px); }
-/* El ícono va arriba de la tarjeta, no al lado: en columnas angostas el
-   texto necesita todo el ancho disponible. */
-.dato-ico{ margin-bottom:2px; }
-.dato-link{
-  text-decoration:none; color:inherit; cursor:pointer;
-  /* Este proyecto trae una .dato-link propia, escrita antes del rediseño,
-     con su propio padding y margin. Se reponen los de .dato para que esta
-     tarjeta mida lo mismo que las otras dos de la fila. */
-  align-items:stretch; padding:24px 22px; margin-bottom:0;
-}
-.dato-link:hover{ border-color:var(--acento); background:var(--suave); }
-.dato-link:active{ transform:scale(.98); }
-.dato .dato-status{ margin:auto 0 0; padding-top:10px; }
-.dato .dato-status .status-dot{ display:inline-block; }
-.dato .dato-status span:not(.status-dot){ display:inline; font-weight:600; color:var(--tinta); }
-.visitanos-ctas{ display:flex; flex-wrap:wrap; gap:11px; margin-top:30px; }
+.red-link svg{ width:16px; height:16px; flex:0 0 auto; }
+.red-link:hover{ border-color:var(--acento); color:var(--acento); background:var(--suave); }
+
 .map-frame{
   border-radius:var(--radio-g); overflow:hidden; box-shadow:var(--sombra-alta);
-  border:1px solid var(--crema-osc); height:440px;
+  border:1px solid var(--crema-osc); min-height:520px;
 }
 .map-frame iframe{ width:100%; height:100%; border:0; display:block; }
 
@@ -324,7 +323,8 @@ h1,h2,h3{ font-family:var(--font-display); font-weight:400; line-height:1.14; }
 
 @media (max-width:900px){
   .nosotros-grid{ grid-template-columns:1fr; gap:34px; }
-  .map-frame{ height:300px; }
+  .visitanos-wrap{ grid-template-columns:1fr; gap:30px; }
+  .map-frame{ min-height:300px; }
 }
 @media (max-width:780px){
   .nav-toggle{ display:flex; }

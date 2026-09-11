@@ -278,3 +278,13 @@ initScrollReveal();
 window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('loader').classList.add('done'), 320);
 });
+
+// Marca en la lista de horario el día de hoy. La lista es estática en el
+// HTML a propósito: si el JS falla, el horario igual se lee.
+function marcarDiaDeHoy() {
+  const hoy = new Date().getDay();
+  document.querySelectorAll('.horario-semana li[data-dia]').forEach(function (li) {
+    li.classList.toggle('hs-hoy', Number(li.dataset.dia) === hoy);
+  });
+}
+marcarDiaDeHoy();
