@@ -97,6 +97,50 @@
     return '#ffffff';
   }
 
+
+  /* ──────────────────────────────────────────────────────────────
+     COLOR DE MARCA DE CADA RED
+     ──────────────────────────────────────────────────────────────
+     Antes cada sitio pintaba sus flotantes con su propia paleta, asi
+     que el de TikTok salia cafe en un sitio y morado en otro, y no se
+     reconocia de un vistazo. Un icono de red se reconoce por su color
+     antes que por su forma: si el de Instagram no es el degradado
+     rosa-naranjo, la gente duda antes de tocarlo.
+
+     Se detecta por el HREF, no por el nombre de la clase: en el
+     portafolio conviven cuatro convenciones distintas de nombres.
+     Y se respeta lo que el sitio ya haya definido a mano con !important. */
+  var COLORES = [
+    [/instagram\.com/i,  'linear-gradient(45deg,#F9CE34,#EE2A7B 50%,#6228D7)', '#fff'],
+    [/tiktok\.com/i,     '#010101', '#fff'],
+    [/wa\.me|whatsapp/i, '#25D366', '#fff'],
+    [/facebook\.com|fb\.com/i, '#1877F2', '#fff'],
+    [/threads\.net/i,    '#000000', '#fff'],
+    [/pedidosya/i,       '#FA0050', '#fff'],
+    [/ubereats|uber\.com/i, '#06C167', '#fff']
+  ];
+
+  function pintarRedes() {
+    var enlaces = document.querySelectorAll(
+      '.flot-auto[href], .flot-auto a[href], [class*="float"][href], [class*="flot"] a[href]');
+    for (var i = 0; i < enlaces.length; i++) {
+      var a = enlaces[i];
+      if (a.getAttribute('data-flot-color')) continue;
+      var href = a.getAttribute('href') || '';
+      for (var j = 0; j < COLORES.length; j++) {
+        if (!COLORES[j][0].test(href)) continue;
+        /* Solo si el boton es un circulo/pastilla de icono: no se le toca
+           el fondo a una barra ancha ni a un boton con texto largo. */
+        var r = a.getBoundingClientRect();
+        if (r.width > 220) break;
+        a.style.setProperty('background', COLORES[j][1], 'important');
+        a.style.setProperty('color', COLORES[j][2], 'important');
+        a.setAttribute('data-flot-color', '1');
+        break;
+      }
+    }
+  }
+
   function marcar() {
     var f = flotantes(), i;
 
@@ -122,6 +166,8 @@
       e.classList.add(izq ? 'flot-izq' : 'flot-der');
       e.style.setProperty('--flot-i', izq ? yaIzq++ : yaDer++);
     }
+
+    pintarRedes();
     return f.length;
   }
 
