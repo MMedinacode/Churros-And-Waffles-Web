@@ -37,6 +37,38 @@
     return d === 0 ? 6 : d - 1;
   }
 
+  /* ---------- horarios especiales por fecha ----------
+     Un feriado no cambia el horario de todos los martes: cambia el de UN
+     martes. Por eso las excepciones van por fecha y no por día de la
+     semana. `dia(i)` es el único sitio donde se lee el horario, así que
+     todo el módulo —el indicador de abierto, la tabla de la semana, la
+     próxima apertura y el resumen— las respeta sin enterarse. */
+  function fechaISO(d) {
+    return d.getFullYear() + '-' +
+           ('0' + (d.getMonth() + 1)).slice(-2) + '-' +
+           ('0' + d.getDate()).slice(-2);
+  }
+
+  /* La fecha que le toca al índice i dentro de la semana en curso. */
+  function fechaDeIndice(i) {
+    var d = new Date();
+    d.setHours(12, 0, 0, 0);           // mediodía: inmune al cambio de hora
+    d.setDate(d.getDate() + (i - indiceHoy()));
+    return d;
+  }
+
+  function excepcionDe(i) {
+    var ex = CFG.excepciones;
+    if (!ex) return null;
+    var f = ex[fechaISO(fechaDeIndice(i))];
+    return (typeof f === 'string' && f) ? f : null;
+  }
+
+  /* El horario del índice i, con la excepción aplicada si la hay. */
+  function dia(i) {
+    return excepcionDe(i) || CFG.dias[i];
+  }
+
   /* "09:30 - 19:00"  ->  [[570, 1140]]
      "08:00 - 13:00 y 16:00 - 21:30" -> [[480,780],[960,1290]]
      "Cerrado" -> []   ·   "Abierto 24 h" -> [[0,1440]] */
@@ -62,8 +94,8 @@
     var ayer = (hoy + 6) % 7;
     var dentro = function (t, m) { return m >= t[0] && m < t[1]; };
     // el día de hoy, y lo que quedó abierto desde ayer pasada la medianoche
-    return tramos(CFG.dias[hoy]).some(function (t) { return dentro(t, min); }) ||
-           tramos(CFG.dias[ayer]).some(function (t) { return dentro(t, min + 1440); });
+    return tramos(dia(hoy)).some(function (t) { return dentro(t, min); }) ||
+           tramos(dia(ayer)).some(function (t) { return dentro(t, min + 1440); });
   }
 
   /* ---------- dónde va la semana ----------
@@ -147,7 +179,9 @@
     var fila = esTabla ? 'tr' : (esLista ? 'li' : 'div');
     var celda = esTabla ? 'td' : 'span';
 
-    CFG.dias.forEach(function (txt, i) {
+    CFG.dias.forEach(function (_, i) {
+      var txt = dia(i);
+      var esExcepcion = !!excepcionDe(i);
       var li = document.createElement(fila);
       li.setAttribute('data-dia', i === 6 ? 0 : i + 1);   // compat con el JS que ya marcaba el día
       if (i === hoy) li.className = 'hs-hoy';
@@ -157,7 +191,9 @@
       dia.textContent = NOMBRES[i];
 
       var hora = document.createElement(celda);
-      hora.className = 'hs-hora' + (/cerrado/i.test(txt) ? ' hs-cerrado' : '');
+      hora.className = 'hs-hora' + (/cerrado/i.test(txt) ? ' hs-cerrado' : '')
+                     + (esExcepcion ? ' hs-especial' : '');
+      if (esExcepcion) hora.title = 'Horario especial por esta fecha';
       hora.textContent = txt;
 
       li.appendChild(dia);
@@ -196,7 +232,7 @@
   /* A qué hora cierra el tramo en curso, para poder decir "cierra 21:30".
      Un local abierto 24 h no cierra: ahí no se dice nada. */
   function cierreEnCurso() {
-    var m = minutosAhora(), t = tramos(CFG.dias[indiceHoy()]);
+    var m = minutosAhora(), t = tramos(dia(indiceHoy()));
     for (var i = 0; i < t.length; i++) {
       if (m >= t[i][0] && m < t[i][1]) return (t[i][1] - t[i][0] >= 1440) ? null : t[i][1];
     }
@@ -205,10 +241,10 @@
   /* La próxima apertura, mirando hoy y los días siguientes. */
   function proximaApertura() {
     var m = minutosAhora(), hoy = indiceHoy();
-    var t = tramos(CFG.dias[hoy]);
+    var t = tramos(dia(hoy));
     for (var i = 0; i < t.length; i++) if (t[i][0] > m) return { min: t[i][0], dia: null };
     for (var d = 1; d <= 7; d++) {
-      var idx = (hoy + d) % 7, td = tramos(CFG.dias[idx]);
+      var idx = (hoy + d) % 7, td = tramos(dia(idx));
       if (td.length) return { min: td[0][0], dia: NOMBRES[idx] };
     }
     return null;
@@ -302,8 +338,8 @@
     var grupos = [], i = 0;
     while (i < 7) {
       var j = i;
-      while (j + 1 < 7 && CFG.dias[j + 1] === CFG.dias[i]) j++;
-      grupos.push([i, j, CFG.dias[i]]);
+      while (j + 1 < 7 && dia(j + 1) === dia(i)) j++;
+      grupos.push([i, j, dia(i)]);
       i = j + 1;
     }
     if (grupos.length === 1 && !/cerrado/i.test(grupos[0][2])) {
