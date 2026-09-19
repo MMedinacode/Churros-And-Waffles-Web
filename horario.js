@@ -40,7 +40,7 @@
   /* ---------- horarios especiales por fecha ----------
      Un feriado no cambia el horario de todos los martes: cambia el de UN
      martes. Por eso las excepciones van por fecha y no por día de la
-     semana. `dia(i)` es el único sitio donde se lee el horario, así que
+     semana. `horarioDe(i)` es el único sitio donde se lee el horario, así que
      todo el módulo —el indicador de abierto, la tabla de la semana, la
      próxima apertura y el resumen— las respeta sin enterarse. */
   function fechaISO(d) {
@@ -65,7 +65,7 @@
   }
 
   /* El horario del índice i, con la excepción aplicada si la hay. */
-  function dia(i) {
+  function horarioDe(i) {
     return excepcionDe(i) || CFG.dias[i];
   }
 
@@ -94,8 +94,8 @@
     var ayer = (hoy + 6) % 7;
     var dentro = function (t, m) { return m >= t[0] && m < t[1]; };
     // el día de hoy, y lo que quedó abierto desde ayer pasada la medianoche
-    return tramos(dia(hoy)).some(function (t) { return dentro(t, min); }) ||
-           tramos(dia(ayer)).some(function (t) { return dentro(t, min + 1440); });
+    return tramos(horarioDe(hoy)).some(function (t) { return dentro(t, min); }) ||
+           tramos(horarioDe(ayer)).some(function (t) { return dentro(t, min + 1440); });
   }
 
   /* ---------- dónde va la semana ----------
@@ -180,7 +180,7 @@
     var celda = esTabla ? 'td' : 'span';
 
     CFG.dias.forEach(function (_, i) {
-      var txt = dia(i);
+      var txt = horarioDe(i);
       var esExcepcion = !!excepcionDe(i);
       var li = document.createElement(fila);
       li.setAttribute('data-dia', i === 6 ? 0 : i + 1);   // compat con el JS que ya marcaba el día
@@ -232,7 +232,7 @@
   /* A qué hora cierra el tramo en curso, para poder decir "cierra 21:30".
      Un local abierto 24 h no cierra: ahí no se dice nada. */
   function cierreEnCurso() {
-    var m = minutosAhora(), t = tramos(dia(indiceHoy()));
+    var m = minutosAhora(), t = tramos(horarioDe(indiceHoy()));
     for (var i = 0; i < t.length; i++) {
       if (m >= t[i][0] && m < t[i][1]) return (t[i][1] - t[i][0] >= 1440) ? null : t[i][1];
     }
@@ -241,10 +241,10 @@
   /* La próxima apertura, mirando hoy y los días siguientes. */
   function proximaApertura() {
     var m = minutosAhora(), hoy = indiceHoy();
-    var t = tramos(dia(hoy));
+    var t = tramos(horarioDe(hoy));
     for (var i = 0; i < t.length; i++) if (t[i][0] > m) return { min: t[i][0], dia: null };
     for (var d = 1; d <= 7; d++) {
-      var idx = (hoy + d) % 7, td = tramos(dia(idx));
+      var idx = (hoy + d) % 7, td = tramos(horarioDe(idx));
       if (td.length) return { min: td[0][0], dia: NOMBRES[idx] };
     }
     return null;
@@ -338,8 +338,8 @@
     var grupos = [], i = 0;
     while (i < 7) {
       var j = i;
-      while (j + 1 < 7 && dia(j + 1) === dia(i)) j++;
-      grupos.push([i, j, dia(i)]);
+      while (j + 1 < 7 && horarioDe(j + 1) === horarioDe(i)) j++;
+      grupos.push([i, j, horarioDe(i)]);
       i = j + 1;
     }
     if (grupos.length === 1 && !/cerrado/i.test(grupos[0][2])) {
