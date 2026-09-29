@@ -32,6 +32,20 @@
            zonas: [ { nombre: 'Centro', costo: 1500 }, { nombre: 'Otra', costo: null } ]
          }
        }
+   - Envío por distancia (en vez de zonas): el cliente escribe su dirección
+     (con sugerencias) o usa su ubicación, y ve al tiro cuánto le sale.
+       entrega: { retiro:true, delivery:true, porDistancia: {
+         origen: [lat, lon],                       // el local
+         tramos: [ { hasta: 1, costo: 500 }, { hasta: 3, costo: 1000 } ],
+         factorRuta: 1.3 } }                       // si falla la ruta por calle
+     Las direcciones se buscan en Photon (OpenStreetMap) y la distancia por
+     calle en OSRM: gratis y sin clave. Si fallan, el pedido sale igual y
+     el local confirma el costo. Más allá del último tramo no hay delivery.
+   - Opciones por producto (salsa, topping…): al tocar «+» se abre un
+     selector y el precio de cada opción se suma al producto.
+       opciones: [ { para: ['Churros tradicionales'], titulo: 'Elige tu salsa',
+         tipo: 'una' | 'varias', obligatoria: true, prefijo: 'salsa',
+         items: [ { nombre: 'Manjar', precio: 600 }, { nombre: 'Sin salsa' } ] } ]
    - Si el sitio tiene window.HORARIO y el local está cerrado, el panel lo
      avisa antes de mandar.
    ============================================================ */
@@ -178,8 +192,48 @@
       '.uc-err{font-size:.82rem;font-weight:600;color:#d64545;margin:0;}',
       '.uc-closed{font-size:.82rem;line-height:1.45;padding:10px 12px;border-radius:9px;margin:0 0 6px;',
       'border:1px dashed ' + accent + ';}',
+      '.uc-dir-wrap{position:relative;}',
+      '.uc-sug{list-style:none;margin:6px 0 0;padding:4px;border:1px solid ' + border + ';border-radius:10px;',
+      'background:' + surface + ';max-height:230px;overflow:auto;}',
+      '.uc-sug button{display:block;width:100%;text-align:left;padding:10px;border:0;background:transparent;',
+      'color:' + onSurface + ';font:inherit;font-size:.9rem;border-radius:7px;cursor:pointer;line-height:1.35;}',
+      '.uc-sug button:hover,.uc-sug button:focus{background:rgba(128,128,128,.2);outline:none;}',
+      '.uc-sug-vacio{font-size:.82rem;opacity:.75;padding:8px 10px;line-height:1.4;}',
+      '.uc-geo{align-self:flex-start;padding:8px 14px;border-radius:999px;border:1.5px solid ' + accent + ';',
+      'background:transparent;color:' + onSurface + ';font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;}',
+      '.uc-geo:disabled{opacity:.6;cursor:wait;}',
+      '.uc-calc{margin:0;font-size:.88rem;line-height:1.45;}',
+      '.uc-calc:empty{display:none;}',
+      '.uc-calc-ok{padding:10px 12px;border-radius:10px;border:1.5px solid ' + accent + ';}',
+      '.uc-calc-ok b{display:block;font-size:1.02rem;color:' + accent + ';}',
+      '.uc-calc-ok span{display:block;font-size:.78rem;opacity:.75;margin-top:2px;}',
+      '.uc-calc-fuera{color:#d64545;font-weight:600;}',
+      '.uc-tarifas{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none;}',
+      '.uc-tarifas li{font-size:.74rem;padding:4px 9px;border-radius:999px;border:1px solid ' + border + ';opacity:.85;}',
+      '.uc-opt-ov{align-items:flex-end;justify-content:center;}',
+      '.uc-opt{width:min(460px,100%);max-height:90vh;overflow-y:auto;background:' + surface + ';color:' + onSurface + ';',
+      'border-radius:20px 20px 0 0;padding:22px 22px 24px;animation:ucUp .25s ease;box-sizing:border-box;}',
+      '@keyframes ucUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}',
+      '.uc-opt .uc-head{margin-bottom:4px;align-items:flex-start;gap:12px;}',
+      '.uc-opt-base{margin:0 0 6px;font-weight:700;color:' + accent + ';}',
+      '.uc-grp{border:0;margin:14px 0 0;padding:0;min-width:0;}',
+      '.uc-grp legend{font-weight:700;font-size:.95rem;padding:0;display:flex;align-items:center;gap:8px;}',
+      '.uc-grp-ob{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid ' + accent + ';color:' + accent + ';}',
+      '.uc-op{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1.5px solid ' + border + ';border-radius:11px;',
+      'margin-top:8px;cursor:pointer;transition:border-color .15s;}',
+      '.uc-op:has(input:checked){border-color:' + accent + ';}',
+      '.uc-op input{width:18px;height:18px;margin:0;accent-color:' + accent + ';flex:0 0 auto;}',
+      '.uc-op-n{flex:1;font-size:.93rem;}',
+      '.uc-op-p{font-weight:700;font-size:.88rem;color:' + accent + ';white-space:nowrap;}',
+      '.uc-opt-qty{justify-content:center;margin:18px 0 6px;gap:16px;}',
+      '.uc-opt-qty button{width:34px;height:34px;font-size:18px;}',
+      '.uc-opt-qty span{font-size:1.05rem;}',
+      'button.uc-go{width:100%;border:0;font:inherit;font-weight:700;cursor:pointer;}',
+      '@keyframes ucBump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}',
+      '.uc-fab.uc-bump{animation:ucBump .45s ease;}',
+      '@media(min-width:641px){.uc-opt-ov{align-items:center;}.uc-opt{border-radius:20px;}}',
       '@media(max-width:640px){.uc-fab{left:14px;bottom:14px;width:50px;height:50px;}.uc-panel{padding:20px;}}',
-      '@media (prefers-reduced-motion:reduce){.uc-panel{animation:none}}'
+      '@media (prefers-reduced-motion:reduce){.uc-panel,.uc-opt,.uc-fab.uc-bump{animation:none}}'
     ].join('');
     var s = document.createElement('style');
     s.id = 'uc-styles';
@@ -189,6 +243,18 @@
 
   /* ---------- estado ---------- */
   var cart = [];
+  var pedido = { entrega: null, zona: '', direccion: '', nombre: '', comentario: '' };
+  var ENT = CFG.entrega || null;
+  var ZONAS = (ENT && ENT.zonas) || [];
+  // Envío por distancia: la dirección se ubica en el mapa y el costo sale
+  // del tramo de kilómetros que configure el local (ver cabecera).
+  var DIST = (ENT && ENT.porDistancia) || null;
+  var OPCIONES = CFG.opciones || [];
+  var envioCalc = nuevoCalc();
+
+  function nuevoCalc() {
+    return { km: null, costo: null, fuera: false, lat: null, lon: null, aprox: false, fallo: false, buscando: false, src: '' };
+  }
 
   function render() {
     var linesEl = document.getElementById('uc-lines');
@@ -262,7 +328,7 @@
       linesEl.appendChild(row);
     });
 
-    // El delivery se suma sólo si su costo es conocido; si no, se avisa.
+    // El envío se suma sólo si su costo es conocido; si no, se avisa.
     var envio = costoEnvio();
     if (envio) total += envio;
     var envioPendiente = pedido.entrega === 'delivery' && !envio;
@@ -273,25 +339,149 @@
     } else if (faltantes) {
       totalEl.textContent = 'A consultar';
       noteEl.textContent = 'Los precios de estos productos no están publicados — se confirman en el local.';
+    } else if (envio) {
+      totalEl.textContent = money(total);
+      noteEl.textContent = 'Incluye ' + money(envio) + ' de envío' +
+        (DIST ? ', estimado según la distancia (unos ' + kmTxt(envioCalc.km) + ').' : '.');
     } else {
       totalEl.textContent = money(total) + (envioPendiente ? ' + envío' : '');
-      noteEl.textContent = envioPendiente
-        ? 'El costo del delivery depende de tu zona: te lo confirman por WhatsApp.'
-        : 'Total referencial según los precios publicados.';
+      noteEl.textContent = !envioPendiente ? 'Total referencial según los precios publicados.'
+        : DIST ? 'Escribe tu dirección para ver cuánto sale el envío.'
+        : 'El costo del delivery depende de tu zona: te lo confirman por WhatsApp.';
     }
   }
 
-  /* ---------- datos del pedido (entrega, nombre, comentario) ---------- */
-  var pedido = { entrega: null, zona: '', direccion: '', nombre: '', comentario: '' };
-  var ENT = CFG.entrega || null;
-  var ZONAS = (ENT && ENT.zonas) || [];
-
+  /* ---------- envío ---------- */
   function costoEnvio() {
-    if (pedido.entrega !== 'delivery' || !ZONAS.length) return 0;
+    if (pedido.entrega !== 'delivery') return 0;
+    if (DIST) return envioCalc.costo && !envioCalc.fuera ? envioCalc.costo : 0;
+    if (!ZONAS.length) return 0;
     var z = ZONAS.filter(function (x) { return x.nombre === pedido.zona; })[0];
     return z && z.costo ? z.costo : 0;
   }
 
+  function kmTxt(km) {
+    return (Math.round(km * 10) / 10).toLocaleString('es-CL') + ' km';
+  }
+
+  var PHOTON = 'https://photon.komoot.io';   // buscador de direcciones de OpenStreetMap, gratis y sin clave
+
+  function pedirJSON(url, ms) {
+    var ctl = window.AbortController ? new AbortController() : null;
+    var t = setTimeout(function () { if (ctl) ctl.abort(); }, ms || 6000);
+    return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) {
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  function lugarDe(p) { return p.district || p.city || p.locality || ''; }
+
+  function etiquetaDe(p) {
+    var calle = p.street ? p.street + (p.housenumber ? ' ' + p.housenumber : '') : '';
+    var partes = [calle || p.name || ''];
+    var lugar = lugarDe(p);
+    if (lugar && partes[0].indexOf(lugar) === -1) partes.push(lugar);
+    return partes.filter(Boolean).join(', ');
+  }
+
+  function buscarDirecciones(q) {
+    var o = DIST.origen;
+    return pedirJSON(PHOTON + '/api/?limit=8&lat=' + o[0] + '&lon=' + o[1] + '&q=' + encodeURIComponent(q))
+      .then(function (d) {
+        var vistos = {};
+        return (d.features || []).filter(function (f) {
+          var p = f.properties || {};
+          if (p.countrycode && p.countrycode !== 'CL') return false;
+          var e = etiquetaDe(p);
+          if (!e || vistos[e]) return false;
+          vistos[e] = 1;
+          return true;
+        }).slice(0, 5).map(function (f) {
+          var p = f.properties;
+          return { label: etiquetaDe(p), num: p.housenumber || '', lugar: lugarDe(p),
+            lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+        });
+      });
+  }
+
+  function haversine(a, b) {
+    var R = 6371, rad = Math.PI / 180;
+    var dLat = (b[0] - a[0]) * rad, dLon = (b[1] - a[1]) * rad;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  // Distancia POR CALLE (OSRM, rutas de OpenStreetMap). Si no responde, línea
+  // recta multiplicada por un factor, que se parece a lo que se maneja.
+  function distanciaCalle(lat, lon) {
+    var o = DIST.origen;
+    var url = 'https://router.project-osrm.org/route/v1/driving/' + o[1] + ',' + o[0] + ';' + lon + ',' + lat + '?overview=false';
+    return pedirJSON(url).then(function (d) {
+      if (!d.routes || !d.routes[0]) throw new Error('sin ruta');
+      return { km: d.routes[0].distance / 1000, aprox: false };
+    }).catch(function () {
+      return { km: haversine(o, [lat, lon]) * (DIST.factorRuta || 1.3), aprox: true };
+    });
+  }
+
+  function tramoDe(km) {
+    var T = DIST.tramos || [];
+    for (var i = 0; i < T.length; i++) if (km <= T[i].hasta) return T[i];
+    return null;
+  }
+
+  var calcSeq = 0;
+  function calcularEnvio(lat, lon, src) {
+    var seq = ++calcSeq;
+    envioCalc = nuevoCalc();
+    envioCalc.lat = lat; envioCalc.lon = lon; envioCalc.buscando = true; envioCalc.src = src || '';
+    pintarCalc(); render();
+    distanciaCalle(lat, lon).then(function (r) {
+      if (seq !== calcSeq) return;
+      var t = tramoDe(r.km);
+      envioCalc.km = r.km; envioCalc.aprox = r.aprox; envioCalc.buscando = false;
+      envioCalc.fuera = !t; envioCalc.costo = t ? t.costo : null;
+      pintarCalc(); render();
+    });
+  }
+
+  function pintarCalc() {
+    var el = document.getElementById('uc-calc');
+    if (!el) return;
+    el.className = 'uc-calc';
+    el.textContent = '';
+    if (envioCalc.buscando) { el.textContent = 'Calculando el envío…'; return; }
+    if (envioCalc.fallo) { el.textContent = 'No pudimos calcular el envío en este momento: el local te lo confirma por WhatsApp.'; return; }
+    if (envioCalc.km == null) return;
+    var T = DIST.tramos;
+    if (envioCalc.fuera) {
+      el.className = 'uc-calc uc-calc-fuera';
+      el.textContent = 'Tu dirección queda a unos ' + kmTxt(envioCalc.km) + ' y el delivery llega hasta ' +
+        T[T.length - 1].hasta + ' km. Puedes retirarlo en el local.';
+      return;
+    }
+    el.className = 'uc-calc uc-calc-ok';
+    var b = document.createElement('b');
+    b.textContent = 'Envío a tu dirección: ' + money(envioCalc.costo);
+    var s = document.createElement('span');
+    s.textContent = 'Unos ' + kmTxt(envioCalc.km) + (envioCalc.aprox ? '' : ' por calle') + ' · valor estimado';
+    el.appendChild(b); el.appendChild(s);
+  }
+
+  function tarifasHTML() {
+    var T = DIST.tramos || [], desde = 0, h = '<ul class="uc-tarifas" aria-label="Tarifas de envío">';
+    T.forEach(function (t) {
+      var r = desde ? desde + ' a ' + t.hasta + ' km' : 'Hasta ' + t.hasta + ' km';
+      h += '<li>' + esc(r) + ' · ' + money(t.costo) + '</li>';
+      desde = t.hasta;
+    });
+    return h + '</ul>';
+  }
+
+  /* ---------- mensaje ---------- */
   function nombreNegocio() {
     if (CFG.negocio) return CFG.negocio;
     var og = document.querySelector('meta[property="og:site_name"]');
@@ -317,17 +507,19 @@
     });
     L.push('');
     L.push('*Subtotal:* ' + (sub ? money(sub) : '') + (falta ? (sub ? ' + ' : '') + 'por confirmar' : ''));
+    var envio = costoEnvio();
     if (pedido.entrega === 'retiro') L.push('*Entrega:* retiro en el local');
     if (pedido.entrega === 'delivery') {
       L.push('*Entrega:* delivery');
-      if (pedido.zona) {
-        var envio = costoEnvio();
-        L.push('*Zona:* ' + pedido.zona + (envio ? ' (+' + money(envio) + ')' : ''));
-      }
+      if (pedido.zona) L.push('*Zona:* ' + pedido.zona);
       if (pedido.direccion) L.push('*Dirección:* ' + pedido.direccion);
-      if (!costoEnvio()) L.push('_¿Cuánto sale el envío a mi dirección?_');
+      if (DIST && envioCalc.lat != null) {
+        L.push('*Ubicación:* https://maps.google.com/?q=' + envioCalc.lat.toFixed(6) + ',' + envioCalc.lon.toFixed(6));
+      }
+      if (envio) L.push('*Envío:* ' + money(envio) + (DIST ? ' (estimado, unos ' + kmTxt(envioCalc.km) + ')' : ''));
+      else L.push('_¿Cuánto sale el envío a mi dirección?_');
     }
-    if (sub && !falta) L.push('*Total:* ' + money(sub + costoEnvio()) + (pedido.entrega === 'delivery' && !costoEnvio() ? ' + envío' : ''));
+    if (sub && !falta) L.push('*Total:* ' + money(sub + envio) + (pedido.entrega === 'delivery' && !envio ? ' + envío' : ''));
     if (pedido.nombre || pedido.comentario) L.push('');
     if (pedido.nombre) L.push('*Nombre:* ' + pedido.nombre);
     if (pedido.comentario) L.push('*Comentario:* ' + pedido.comentario);
@@ -365,6 +557,7 @@
     return 'Ahora el local está cerrado.' + abre + ' Puedes mandar tu pedido igual: lo ven cuando abran.';
   }
 
+  /* ---------- formulario de entrega ---------- */
   function buildForm(panel, before) {
     var f = document.createElement('div');
     f.className = 'uc-form';
@@ -374,8 +567,8 @@
       if (ENT.retiro) html += '<button type="button" data-ent="retiro" aria-pressed="false">Retiro en el local</button>';
       if (ENT.delivery) html += '<button type="button" data-ent="delivery" aria-pressed="false">Delivery</button>';
       html += '</div>';
-      html += '<div id="uc-deliv" style="display:none;flex-direction:column;gap:12px">';
-      if (ZONAS.length) {
+      html += '<div id="uc-deliv" style="display:none;flex-direction:column;gap:10px">';
+      if (ZONAS.length && !DIST) {
         html += '<div class="uc-field"><label for="uc-zona">Tu zona</label><select id="uc-zona"><option value="">Elige tu zona</option>';
         ZONAS.forEach(function (z) {
           html += '<option value="' + esc(z.nombre) + '">' + esc(z.nombre) +
@@ -383,17 +576,25 @@
         });
         html += '</select></div>';
       }
-      html += '<div class="uc-field"><label for="uc-dir">Dirección y comuna</label>' +
-        '<input id="uc-dir" type="text" autocomplete="street-address" placeholder="Ej: Los Aromos 123, San Bernardo"></div>';
-      // Sin zonas, el aviso del costo ya sale bajo el total: no repetirlo.
-      if (ENT.notaDelivery || ZONAS.length) {
-        html += '<p class="uc-hint">' + (ENT.notaDelivery || 'El costo del envío depende de la zona.') + '</p>';
+      html += '<div class="uc-field uc-dir-wrap"><label for="uc-dir">Dirección de entrega</label>' +
+        '<input id="uc-dir" type="text" placeholder="Ej: Eyzaguirre 500, San Bernardo"' +
+        (DIST ? ' autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="uc-sug" aria-expanded="false"'
+              : ' autocomplete="street-address"') + '>' +
+        (DIST ? '<ul class="uc-sug" id="uc-sug" role="listbox" aria-label="Direcciones encontradas" hidden></ul>' : '') +
+        '</div>';
+      if (DIST) {
+        html += '<button type="button" class="uc-geo" id="uc-geo">📍 Usar mi ubicación</button>';
+        html += '<div class="uc-calc" id="uc-calc" aria-live="polite"></div>';
+        html += tarifasHTML();
+      }
+      if (ENT.notaDelivery || (ZONAS.length && !DIST)) {
+        html += '<p class="uc-hint">' + esc(ENT.notaDelivery || 'El costo del envío depende de la zona.') + '</p>';
       }
       html += '</div>';
     }
     html += '<div class="uc-field"><label for="uc-nom">Tu nombre</label><input id="uc-nom" type="text" autocomplete="given-name"></div>';
     html += '<div class="uc-field"><label for="uc-com">Comentario <span style="font-weight:400">(opcional)</span></label>' +
-      '<textarea id="uc-com" rows="2" placeholder="Ej: sin azúcar, con extra manjar"></textarea></div>';
+      '<textarea id="uc-com" rows="2" placeholder="Ej: sin azúcar, tocar el timbre dos veces"></textarea></div>';
     html += '<p class="uc-err" id="uc-err" role="alert" hidden></p>';
     f.innerHTML = html;
     panel.insertBefore(f, before);
@@ -416,23 +617,278 @@
       el.addEventListener('input', function () { pedido[key] = el.value.trim(); render(); });
       el.addEventListener('change', function () { pedido[key] = el.value.trim(); render(); });
     }
-    bind('uc-zona', 'zona'); bind('uc-dir', 'direccion'); bind('uc-nom', 'nombre'); bind('uc-com', 'comentario');
+    bind('uc-zona', 'zona'); bind('uc-nom', 'nombre'); bind('uc-com', 'comentario');
+    if (DIST) bindDireccion(); else bind('uc-dir', 'direccion');
+  }
+
+  // Dirección con sugerencias: al escribir se buscan direcciones cerca del
+  // local; al elegir una, se calcula el envío al tiro.
+  function bindDireccion() {
+    var inp = document.getElementById('uc-dir');
+    var lista = document.getElementById('uc-sug');
+    var geo = document.getElementById('uc-geo');
+    var timer = null, seq = 0, escrito = '';
+
+    function cerrarLista() { lista.hidden = true; inp.setAttribute('aria-expanded', 'false'); }
+
+    function mostrar(res) {
+      lista.innerHTML = '';
+      if (!res.length) {
+        var li0 = document.createElement('li');
+        li0.className = 'uc-sug-vacio';
+        li0.textContent = 'No encontramos esa dirección. Prueba con calle, número y comuna, o usa tu ubicación.';
+        lista.appendChild(li0);
+      }
+      res.forEach(function (r) {
+        var li = document.createElement('li');
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('role', 'option');
+        b.textContent = r.label;
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // que el blur no cierre antes del clic
+        b.addEventListener('click', function () { elegir(r); });
+        b.addEventListener('keydown', function (e) {
+          var todos = lista.querySelectorAll('button'), i = Array.prototype.indexOf.call(todos, b);
+          if (e.key === 'ArrowDown' && todos[i + 1]) { e.preventDefault(); todos[i + 1].focus(); }
+          if (e.key === 'ArrowUp') { e.preventDefault(); (todos[i - 1] || inp).focus(); }
+          if (e.key === 'Escape') { cerrarLista(); inp.focus(); }
+        });
+        li.appendChild(b);
+        lista.appendChild(li);
+      });
+      lista.hidden = false;
+      inp.setAttribute('aria-expanded', 'true');
+    }
+
+    function elegir(r) {
+      // Si el buscador no trae el número de casa pero la persona sí lo
+      // escribió, se respeta lo que escribió: el repartidor necesita el número.
+      var texto = r.num || !/\d/.test(escrito) ? r.label
+        : escrito.trim() + (r.lugar && escrito.toLowerCase().indexOf(r.lugar.toLowerCase()) === -1 ? ', ' + r.lugar : '');
+      inp.value = texto;
+      pedido.direccion = texto;
+      cerrarLista();
+      inp.focus();
+      calcularEnvio(r.lat, r.lon, 'lista');
+    }
+
+    inp.addEventListener('input', function () {
+      escrito = inp.value;
+      pedido.direccion = inp.value.trim();
+      // Cambió la dirección: el envío calculado ya no vale. Salvo si vino de
+      // la ubicación del teléfono y sólo se le está agregando el número o depto.
+      if (envioCalc.src !== 'geo') { calcSeq++; envioCalc = nuevoCalc(); pintarCalc(); }
+      render();
+      clearTimeout(timer);
+      if (inp.value.trim().length < 5) { cerrarLista(); return; }
+      timer = setTimeout(function () {
+        var mio = ++seq;
+        buscarDirecciones(inp.value.trim()).then(function (res) {
+          if (mio === seq) mostrar(res);
+        }).catch(function () {
+          if (mio !== seq) return;
+          envioCalc.fallo = true; pintarCalc(); render();
+        });
+      }, 450);
+    });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' && !lista.hidden) {
+        var p = lista.querySelector('button');
+        if (p) { e.preventDefault(); p.focus(); }
+      }
+      if (e.key === 'Escape') cerrarLista();
+    });
+    inp.addEventListener('blur', function () {
+      setTimeout(function () { if (!lista.contains(document.activeElement)) cerrarLista(); }, 150);
+    });
+
+    geo.addEventListener('click', function () {
+      var el = document.getElementById('uc-calc');
+      if (!navigator.geolocation) { el.textContent = 'Tu navegador no comparte la ubicación. Escribe tu dirección.'; return; }
+      geo.disabled = true;
+      el.className = 'uc-calc';
+      el.textContent = 'Buscando tu ubicación…';
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        geo.disabled = false;
+        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+        calcularEnvio(lat, lon, 'geo');
+        pedirJSON(PHOTON + '/reverse?lat=' + lat + '&lon=' + lon).then(function (d) {
+          var f0 = d.features && d.features[0];
+          var e = f0 ? etiquetaDe(f0.properties) : '';
+          if (e && !inp.value.trim()) { inp.value = e; escrito = e; pedido.direccion = e; render(); }
+          inp.focus();
+        }).catch(function () { inp.focus(); });
+      }, function () {
+        geo.disabled = false;
+        el.className = 'uc-calc';
+        el.textContent = 'No pudimos usar tu ubicación. Escribe tu dirección y elígela de la lista.';
+      }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+    });
   }
 
   function validar() {
     var err = document.getElementById('uc-err');
     var msg = '';
+    var deliv = pedido.entrega === 'delivery';
     if (!cart.length) msg = 'Todavía no agregaste nada.';
     else if (ENT && (ENT.retiro || ENT.delivery) && !pedido.entrega) msg = 'Elige si lo retiras en el local o lo quieres por delivery.';
-    else if (pedido.entrega === 'delivery' && ZONAS.length && !pedido.zona) msg = 'Elige tu zona para el delivery.';
-    else if (pedido.entrega === 'delivery' && !pedido.direccion) msg = 'Escribe la dirección para el delivery.';
+    else if (deliv && ZONAS.length && !DIST && !pedido.zona) msg = 'Elige tu zona para el delivery.';
+    else if (deliv && !pedido.direccion) msg = 'Escribe la dirección para el delivery.';
+    else if (deliv && DIST && envioCalc.buscando) msg = 'Espera un segundo: estamos calculando el envío.';
+    else if (deliv && DIST && envioCalc.fuera) msg = 'Tu dirección queda fuera de la zona de delivery. Puedes elegir retiro en el local.';
+    else if (deliv && DIST && envioCalc.km == null && !envioCalc.fallo) msg = 'Elige tu dirección de la lista, o usa tu ubicación, para calcular el envío.';
     if (err) { err.textContent = msg; err.hidden = !msg; }
     return !msg;
   }
 
-  function addItem(name, price) {
+  /* ---------- opciones por producto (salsa, topping…) ---------- */
+  function gruposPara(nombre) {
+    var n = nombre.toLowerCase();
+    return OPCIONES.filter(function (g) {
+      return [].concat(g.para || []).some(function (p) { return n.indexOf(String(p).toLowerCase()) !== -1; });
+    });
+  }
+
+  function abrirOpciones(nombre, precio, grupos, origen) {
+    var qty = 1;
+    var ov = document.createElement('div');
+    ov.className = 'uc-overlay uc-opt-ov open';
+    var box = document.createElement('div');
+    box.className = 'uc-opt';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'uc-opt-t');
+
+    var head = document.createElement('div');
+    head.className = 'uc-head';
+    var h = document.createElement('h3');
+    h.id = 'uc-opt-t';
+    h.textContent = nombre;
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'uc-x'; x.setAttribute('aria-label', 'Cerrar'); x.textContent = '×';
+    head.appendChild(h); head.appendChild(x);
+    box.appendChild(head);
+
+    if (precio) {
+      var base = document.createElement('p');
+      base.className = 'uc-opt-base';
+      base.textContent = money(precio);
+      box.appendChild(base);
+    }
+
+    grupos.forEach(function (g, gi) {
+      var fs = document.createElement('fieldset');
+      fs.className = 'uc-grp';
+      var lg = document.createElement('legend');
+      lg.textContent = g.titulo || 'Elige';
+      if (g.obligatoria) {
+        var ob = document.createElement('span');
+        ob.className = 'uc-grp-ob';
+        ob.textContent = g.tipo === 'varias' ? 'Elige al menos una' : 'Obligatorio';
+        lg.appendChild(ob);
+      }
+      fs.appendChild(lg);
+      g.items.forEach(function (it, ii) {
+        var lab = document.createElement('label');
+        lab.className = 'uc-op';
+        var inp = document.createElement('input');
+        inp.type = g.tipo === 'varias' ? 'checkbox' : 'radio';
+        inp.name = 'uc-g' + gi;
+        inp.value = ii;
+        var nm = document.createElement('span');
+        nm.className = 'uc-op-n';
+        nm.textContent = it.nombre;
+        var pr = document.createElement('span');
+        pr.className = 'uc-op-p';
+        pr.textContent = it.precio ? '+' + money(it.precio) : (g.gratisTxt || '');
+        lab.appendChild(inp); lab.appendChild(nm); lab.appendChild(pr);
+        fs.appendChild(lab);
+      });
+      box.appendChild(fs);
+    });
+
+    var qrow = document.createElement('div');
+    qrow.className = 'uc-qty uc-opt-qty';
+    var menos = document.createElement('button'); menos.type = 'button'; menos.textContent = '−';
+    menos.setAttribute('aria-label', 'Una menos');
+    var qn = document.createElement('span'); qn.textContent = '1';
+    var mas = document.createElement('button'); mas.type = 'button'; mas.textContent = '+';
+    mas.setAttribute('aria-label', 'Una más');
+    qrow.appendChild(menos); qrow.appendChild(qn); qrow.appendChild(mas);
+    box.appendChild(qrow);
+
+    var err = document.createElement('p');
+    err.className = 'uc-err'; err.setAttribute('role', 'alert'); err.hidden = true;
+    box.appendChild(err);
+
+    var add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'uc-go';
+    box.appendChild(add);
+
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+
+    function elegidos() {
+      return grupos.map(function (g, gi) {
+        return Array.prototype.filter.call(box.querySelectorAll('input[name="uc-g' + gi + '"]'), function (i) { return i.checked; })
+          .map(function (i) { return g.items[+i.value]; });
+      });
+    }
+    function unitario() {
+      if (!precio) return null;
+      return elegidos().reduce(function (s, sel) {
+        return s + sel.reduce(function (a, it) { return a + (it.precio || 0); }, 0);
+      }, precio);
+    }
+    function pintar() {
+      qn.textContent = qty;
+      var u = unitario();
+      add.textContent = 'Agregar al pedido' + (u ? ' · ' + money(u * qty) : '');
+    }
+    function cerrar() {
+      document.removeEventListener('keydown', teclas);
+      ov.parentNode && ov.parentNode.removeChild(ov);
+      if (origen && origen.focus) origen.focus();
+    }
+    function teclas(e) { if (e.key === 'Escape') cerrar(); }
+
+    box.addEventListener('change', function () { err.hidden = true; pintar(); });
+    menos.addEventListener('click', function () { if (qty > 1) { qty--; pintar(); } });
+    mas.addEventListener('click', function () { qty++; pintar(); });
+    x.addEventListener('click', cerrar);
+    ov.addEventListener('click', function (e) { if (e.target === ov) cerrar(); });
+    document.addEventListener('keydown', teclas);
+    add.addEventListener('click', function () {
+      var sel = elegidos();
+      for (var i = 0; i < grupos.length; i++) {
+        if (grupos[i].obligatoria && !sel[i].length) {
+          err.textContent = (grupos[i].titulo || 'Elige una opción') + ': falta elegir.';
+          err.hidden = false;
+          return;
+        }
+      }
+      var partes = [];
+      sel.forEach(function (s, i) {
+        if (!s.length) return;
+        var nombres = s.map(function (it) { return it.nombre; }).join(', ');
+        partes.push(grupos[i].prefijo ? grupos[i].prefijo + ' ' + nombres : nombres);
+      });
+      addItem(nombre + (partes.length ? ' (' + partes.join('; ') + ')' : ''), unitario(), qty);
+      var fab = document.getElementById('uc-fab');
+      if (fab) { fab.classList.remove('uc-bump'); void fab.offsetWidth; fab.classList.add('uc-bump'); }
+      cerrar();
+    });
+
+    pintar();
+    var primero = box.querySelector('input');
+    if (primero) primero.focus();
+  }
+
+  function addItem(name, price, qty) {
+    qty = qty || 1;
     var found = cart.filter(function (c) { return c.name === name; })[0];
-    if (found) { found.qty++; } else { cart.push({ name: name, price: price, qty: 1 }); }
+    if (found) { found.qty += qty; } else { cart.push({ name: name, price: price, qty: qty }); }
     render();
   }
 
@@ -556,6 +1012,8 @@
       function doAdd(ev) {
         ev.stopPropagation();
         ev.preventDefault();
+        var grupos = gruposPara(name);
+        if (grupos.length) { abrirOpciones(name, price, grupos, btn); return; }
         addItem(name, price);
         btn.classList.add('uc-done');
         setTimeout(function () { btn.classList.remove('uc-done'); }, 450);

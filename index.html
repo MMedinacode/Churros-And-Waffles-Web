@@ -452,16 +452,34 @@
 <script src="vida.js?v=25092026"></script>
 <script src="carta-fotos.js?v=25092026"></script>
 <script src="script.js?v=25092026"></script>
-<!-- Carrito: el pedido llega ESCRITO al WhatsApp del local. Delivery según zona:
-     PENDIENTE pedirles sus zonas y costos reales. Hasta entonces el cliente
-     escribe su dirección y el local le confirma el costo del envío. -->
-<script>window.CARRITO_CONFIG={negocio:"Churros and Waffles",entrega:{retiro:true,delivery:true,zonas:[]}};</script>
-<script src="carrito.js?v=29092026"></script>
+<!-- Carrito: el pedido llega ESCRITO al WhatsApp del local, con la salsa elegida
+     y el envío calculado por distancia.
+     ⚠️ VALORES DE EJEMPLO (29-09-2026), puestos a pedido de Matías para mostrarle
+     el sistema al local: los TRAMOS DE ENVÍO y el RECARGO DE CADA SALSA son
+     inventados. Reemplazarlos por los reales del local antes de que lo usen.
+     Reales: los nombres de las salsas y de los toppings (de sus propias gráficas)
+     y la ubicación del local (su pin de Google Maps). -->
+<script>window.CARRITO_CONFIG={
+  negocio:"Churros and Waffles",
+  entrega:{retiro:true, delivery:true, porDistancia:{
+    origen:[-33.609117,-70.6865472],
+    tramos:[{hasta:1,costo:500},{hasta:3,costo:1000},{hasta:5,costo:2000},{hasta:8,costo:3500}],
+    factorRuta:1.3
+  }},
+  opciones:[
+    {para:["Churros tradicionales"], titulo:"Elige tu salsa", tipo:"una", obligatoria:true, prefijo:"salsa",
+     items:[{nombre:"Sin salsa"},{nombre:"Leche condensada",precio:400},{nombre:"Chocolate",precio:500},
+            {nombre:"Manjar",precio:700},{nombre:"Frambuesa",precio:700},{nombre:"Nutella",precio:900}]},
+    {para:["Churros con topping"], titulo:"Elige tu topping", tipo:"una", obligatoria:true, prefijo:"topping", gratisTxt:"incluido",
+     items:[{nombre:"Galleta oreo"},{nombre:"Manjar nuez"},{nombre:"Manjar maní"},{nombre:"Chocolate crema chantilly"},{nombre:"Chocolateada"}]}
+  ]
+};</script>
+<script src="carrito.js?v=29092026b"></script>
 <!-- Horario REAL de su ficha de Google Maps (11-09-2026). El módulo horario.js pinta la semana completa y el estado en vivo. -->
 <script>window.HORARIO={dias:["16:30 - 21:30","16:30 - 21:30","16:30 - 21:30","16:30 - 21:30","16:30 - 21:30","16:30 - 21:30","16:30 - 21:30"],fuente:"Google Maps, 11-09-2026"};</script>
 <script src="horario.js?v=25092026"></script>
 <script src="flotantes.js?v=25092026"></script>
 <!-- Propuesta de Halloween: sólo se ve con ?halloween en el link (vista previa para el local). -->
-<script src="halloween.js?v=29092026"></script>
+<script src="halloween.js?v=29092026c"></script>
 </body>
 </html>

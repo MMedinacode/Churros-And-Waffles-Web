@@ -17,18 +17,18 @@ const MENU = {
       {
         "n": "Churros tradicionales · 8 unidades",
         "p": 3990,
-        "d": "Agrega tu salsa: nutella, manjar, frambuesa, chocolate o leche condensada",
+        "d": "Con la salsa que elijas: nutella, manjar, frambuesa, chocolate o leche condensada",
         "img": "churros-tradicionales.jpg"
       },
       {
         "n": "Churros tradicionales · 12 unidades",
         "p": 5490,
-        "d": "Agrega tu salsa: nutella, manjar, frambuesa, chocolate o leche condensada"
+        "d": "Con la salsa que elijas: nutella, manjar, frambuesa, chocolate o leche condensada"
       },
       {
         "n": "Churros tradicionales · 16 unidades",
         "p": 6990,
-        "d": "Agrega tu salsa: nutella, manjar, frambuesa, chocolate o leche condensada"
+        "d": "Con la salsa que elijas: nutella, manjar, frambuesa, chocolate o leche condensada"
       },
       {
         "n": "Churro relleno de frambuesa",
