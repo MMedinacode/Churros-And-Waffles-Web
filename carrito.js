@@ -17,6 +17,23 @@
        window.CARRITO_CONFIG = { href: 'https://wa.me/569...', label: 'Pedir por WhatsApp' }
      Si no se configura, busca automáticamente un link wa.me / tel: del
      propio sitio.
+   - (29-09-2026) Si el cierre es un link de WhatsApp, el chat se abre con
+     el pedido YA ESCRITO: productos, cantidades, total, nombre y
+     comentario. Antes se abría vacío y el cliente tenía que escribir de
+     memoria lo que acababa de armar.
+   - Retiro / delivery, opcional, sólo si el sitio lo configura:
+       window.CARRITO_CONFIG = {
+         negocio: 'Churros and Waffles',
+         entrega: {
+           retiro: true, delivery: true,
+           // Sin zonas: se pide la comuna o sector y el costo lo confirma
+           // el local. Con zonas: el cliente elige y el costo se suma.
+           // NUNCA inventar zonas ni costos: sólo los que dé el local.
+           zonas: [ { nombre: 'Centro', costo: 1500 }, { nombre: 'Otra', costo: null } ]
+         }
+       }
+   - Si el sitio tiene window.HORARIO y el local está cerrado, el panel lo
+     avisa antes de mandar.
    ============================================================ */
 (function () {
   'use strict';
@@ -143,6 +160,24 @@
       '.uc-go{display:block;text-align:center;background:' + accent + ';color:' + surface + ';text-decoration:none;',
       'padding:14px;border-radius:10px;font-weight:700;margin-top:8px;transition:transform .12s ease,filter .2s ease;}',
       '.uc-go:hover{filter:brightness(1.08);} .uc-go:active{transform:scale(.97);}',
+      '.uc-form{display:flex;flex-direction:column;gap:12px;padding:16px 0 4px;}',
+      '.uc-form-t{font-weight:700;font-size:.9rem;margin:0;}',
+      '.uc-seg{display:flex;gap:8px;}',
+      '.uc-seg button{flex:1;padding:10px 8px;border-radius:10px;border:1.5px solid ' + border + ';background:transparent;',
+      'color:' + onSurface + ';font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;}',
+      '.uc-seg button[aria-pressed="true"]{border-color:' + accent + ';background:' + accent + ';color:' + surface + ';}',
+      '.uc-field{display:flex;flex-direction:column;gap:5px;}',
+      '.uc-field label{font-size:.8rem;font-weight:600;opacity:.8;}',
+      '.uc-field input,.uc-field select,.uc-field textarea{width:100%;box-sizing:border-box;padding:10px 12px;',
+      'border-radius:9px;border:1px solid ' + border + ';background:transparent;color:' + onSurface + ';',
+      'font:inherit;font-size:16px;}',
+      '.uc-field select option{color:#1c1917;}',
+      '.uc-field textarea{resize:vertical;min-height:58px;}',
+      '.uc-field input:focus,.uc-field select:focus,.uc-field textarea:focus{outline:2px solid ' + accent + ';outline-offset:1px;}',
+      '.uc-hint{font-size:.78rem;opacity:.7;margin:0;line-height:1.45;}',
+      '.uc-err{font-size:.82rem;font-weight:600;color:#d64545;margin:0;}',
+      '.uc-closed{font-size:.82rem;line-height:1.45;padding:10px 12px;border-radius:9px;margin:0 0 6px;',
+      'border:1px dashed ' + accent + ';}',
       '@media(max-width:640px){.uc-fab{left:14px;bottom:14px;width:50px;height:50px;}.uc-panel{padding:20px;}}',
       '@media (prefers-reduced-motion:reduce){.uc-panel{animation:none}}'
     ].join('');
@@ -227,6 +262,11 @@
       linesEl.appendChild(row);
     });
 
+    // El delivery se suma sólo si su costo es conocido; si no, se avisa.
+    var envio = costoEnvio();
+    if (envio) total += envio;
+    var envioPendiente = pedido.entrega === 'delivery' && !envio;
+
     if (faltantes && total) {
       totalEl.textContent = money(total) + ' + consultar';
       noteEl.textContent = 'Hay ' + faltantes + ' producto(s) sin precio publicado — el total final se confirma en el local.';
@@ -234,9 +274,160 @@
       totalEl.textContent = 'A consultar';
       noteEl.textContent = 'Los precios de estos productos no están publicados — se confirman en el local.';
     } else {
-      totalEl.textContent = money(total);
-      noteEl.textContent = 'Total referencial según los precios publicados.';
+      totalEl.textContent = money(total) + (envioPendiente ? ' + envío' : '');
+      noteEl.textContent = envioPendiente
+        ? 'El costo del delivery depende de tu zona: te lo confirman por WhatsApp.'
+        : 'Total referencial según los precios publicados.';
     }
+  }
+
+  /* ---------- datos del pedido (entrega, nombre, comentario) ---------- */
+  var pedido = { entrega: null, zona: '', direccion: '', nombre: '', comentario: '' };
+  var ENT = CFG.entrega || null;
+  var ZONAS = (ENT && ENT.zonas) || [];
+
+  function costoEnvio() {
+    if (pedido.entrega !== 'delivery' || !ZONAS.length) return 0;
+    var z = ZONAS.filter(function (x) { return x.nombre === pedido.zona; })[0];
+    return z && z.costo ? z.costo : 0;
+  }
+
+  function nombreNegocio() {
+    if (CFG.negocio) return CFG.negocio;
+    var og = document.querySelector('meta[property="og:site_name"]');
+    if (og && og.content) return og.content.trim();
+    return document.title.split(/\s[—|·-]\s/)[0].trim();
+  }
+
+  function esc(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function esWhatsApp(href) {
+    return /wa\.me\/|api\.whatsapp\.com/.test(href || '');
+  }
+
+  function armarMensaje() {
+    var L = ['¡Hola, ' + nombreNegocio() + '! Quiero hacer este pedido:', ''];
+    var sub = 0, falta = 0;
+    cart.forEach(function (c) {
+      var p = c.price ? money(c.price * c.qty) : 'a consultar';
+      if (c.price) sub += c.price * c.qty; else falta++;
+      L.push('• ' + c.qty + ' × ' + c.name + ' — ' + p);
+    });
+    L.push('');
+    L.push('*Subtotal:* ' + (sub ? money(sub) : '') + (falta ? (sub ? ' + ' : '') + 'por confirmar' : ''));
+    if (pedido.entrega === 'retiro') L.push('*Entrega:* retiro en el local');
+    if (pedido.entrega === 'delivery') {
+      L.push('*Entrega:* delivery');
+      if (pedido.zona) {
+        var envio = costoEnvio();
+        L.push('*Zona:* ' + pedido.zona + (envio ? ' (+' + money(envio) + ')' : ''));
+      }
+      if (pedido.direccion) L.push('*Dirección:* ' + pedido.direccion);
+      if (!costoEnvio()) L.push('_¿Cuánto sale el envío a mi dirección?_');
+    }
+    if (sub && !falta) L.push('*Total:* ' + money(sub + costoEnvio()) + (pedido.entrega === 'delivery' && !costoEnvio() ? ' + envío' : ''));
+    if (pedido.nombre || pedido.comentario) L.push('');
+    if (pedido.nombre) L.push('*Nombre:* ' + pedido.nombre);
+    if (pedido.comentario) L.push('*Comentario:* ' + pedido.comentario);
+    L.push('');
+    L.push('(Pedido armado en la página web)');
+    return L.join('\n');
+  }
+
+  function hrefConPedido(base) {
+    if (!esWhatsApp(base)) return base;
+    var sep = base.indexOf('?') === -1 ? '?' : '&';
+    return base.replace(/([?&])text=[^&]*/, '$1').replace(/[?&]$/, '') + sep + 'text=' + encodeURIComponent(armarMensaje());
+  }
+
+  // Estado del local ahora, según window.HORARIO (índice 0 = lunes).
+  function avisoCerrado() {
+    var H = window.HORARIO;
+    if (!H || !H.dias || H.dias.length !== 7) return '';
+    var ahora = new Date();
+    var min = ahora.getHours() * 60 + ahora.getMinutes();
+    var hoy = (ahora.getDay() + 6) % 7, ayer = (hoy + 6) % 7;
+    function rango(s) {
+      s = String(s || '');
+      if (/24\s*h/i.test(s)) return [0, 1440];
+      var m = s.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      var a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4];
+      return [a, b <= a ? b + 1440 : b];
+    }
+    var r = rango(H.dias[hoy]), ry = rango(H.dias[ayer]);
+    if (ry && ry[1] > 1440 && min < ry[1] - 1440) return '';   // turno de anoche que pasa medianoche
+    if (r && min >= r[0] && min < r[1]) return '';
+    if (!r && !/cerrado/i.test(H.dias[hoy])) return '';          // formato desconocido: no opinar
+    var abre = r && min < r[0] ? ' Hoy abre a las ' + String(H.dias[hoy]).match(/\d{1,2}:\d{2}/)[0] + '.' : '';
+    return 'Ahora el local está cerrado.' + abre + ' Puedes mandar tu pedido igual: lo ven cuando abran.';
+  }
+
+  function buildForm(panel, before) {
+    var f = document.createElement('div');
+    f.className = 'uc-form';
+    var html = '';
+    if (ENT && (ENT.retiro || ENT.delivery)) {
+      html += '<p class="uc-form-t" id="uc-ent-t">¿Cómo lo quieres?</p><div class="uc-seg" role="group" aria-labelledby="uc-ent-t">';
+      if (ENT.retiro) html += '<button type="button" data-ent="retiro" aria-pressed="false">Retiro en el local</button>';
+      if (ENT.delivery) html += '<button type="button" data-ent="delivery" aria-pressed="false">Delivery</button>';
+      html += '</div>';
+      html += '<div id="uc-deliv" style="display:none;flex-direction:column;gap:12px">';
+      if (ZONAS.length) {
+        html += '<div class="uc-field"><label for="uc-zona">Tu zona</label><select id="uc-zona"><option value="">Elige tu zona</option>';
+        ZONAS.forEach(function (z) {
+          html += '<option value="' + esc(z.nombre) + '">' + esc(z.nombre) +
+            (z.costo ? ' — ' + money(z.costo) : ' — a confirmar') + '</option>';
+        });
+        html += '</select></div>';
+      }
+      html += '<div class="uc-field"><label for="uc-dir">Dirección y comuna</label>' +
+        '<input id="uc-dir" type="text" autocomplete="street-address" placeholder="Ej: Los Aromos 123, San Bernardo"></div>';
+      // Sin zonas, el aviso del costo ya sale bajo el total: no repetirlo.
+      if (ENT.notaDelivery || ZONAS.length) {
+        html += '<p class="uc-hint">' + (ENT.notaDelivery || 'El costo del envío depende de la zona.') + '</p>';
+      }
+      html += '</div>';
+    }
+    html += '<div class="uc-field"><label for="uc-nom">Tu nombre</label><input id="uc-nom" type="text" autocomplete="given-name"></div>';
+    html += '<div class="uc-field"><label for="uc-com">Comentario <span style="font-weight:400">(opcional)</span></label>' +
+      '<textarea id="uc-com" rows="2" placeholder="Ej: sin azúcar, con extra manjar"></textarea></div>';
+    html += '<p class="uc-err" id="uc-err" role="alert" hidden></p>';
+    f.innerHTML = html;
+    panel.insertBefore(f, before);
+
+    Array.prototype.forEach.call(f.querySelectorAll('[data-ent]'), function (b) {
+      b.addEventListener('click', function () {
+        pedido.entrega = b.getAttribute('data-ent');
+        Array.prototype.forEach.call(f.querySelectorAll('[data-ent]'), function (o) {
+          o.setAttribute('aria-pressed', String(o === b));
+        });
+        var d = document.getElementById('uc-deliv');
+        if (d) d.style.display = pedido.entrega === 'delivery' ? 'flex' : 'none';
+        document.getElementById('uc-err').hidden = true;
+        render();
+      });
+    });
+    function bind(id, key) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () { pedido[key] = el.value.trim(); render(); });
+      el.addEventListener('change', function () { pedido[key] = el.value.trim(); render(); });
+    }
+    bind('uc-zona', 'zona'); bind('uc-dir', 'direccion'); bind('uc-nom', 'nombre'); bind('uc-com', 'comentario');
+  }
+
+  function validar() {
+    var err = document.getElementById('uc-err');
+    var msg = '';
+    if (!cart.length) msg = 'Todavía no agregaste nada.';
+    else if (ENT && (ENT.retiro || ENT.delivery) && !pedido.entrega) msg = 'Elige si lo retiras en el local o lo quieres por delivery.';
+    else if (pedido.entrega === 'delivery' && ZONAS.length && !pedido.zona) msg = 'Elige tu zona para el delivery.';
+    else if (pedido.entrega === 'delivery' && !pedido.direccion) msg = 'Escribe la dirección para el delivery.';
+    if (err) { err.textContent = msg; err.hidden = !msg; }
+    return !msg;
   }
 
   function addItem(name, price) {
@@ -284,11 +475,27 @@
       '<div id="uc-lines"></div>' +
       '<div class="uc-total"><span>Total</span><span id="uc-total">$0</span></div>' +
       '<p class="uc-note" id="uc-note"></p>' +
+      '<p class="uc-closed" id="uc-closed" hidden></p>' +
       '<a class="uc-go" id="uc-go" target="_blank" rel="noopener">' + checkout.label + '</a>' +
       '</div>';
     document.body.appendChild(ov);
 
-    document.getElementById('uc-go').setAttribute('href', checkout.href);
+    var panel = ov.querySelector('.uc-panel');
+    // Los datos de entrega sólo tienen sentido si el pedido viaja escrito.
+    if (esWhatsApp(checkout.href)) buildForm(panel, panel.querySelector('.uc-total'));
+
+    var go = document.getElementById('uc-go');
+    go.setAttribute('href', checkout.href);
+    go.addEventListener('click', function (e) {
+      if (!esWhatsApp(checkout.href)) return;
+      if (!validar()) { e.preventDefault(); return; }
+      go.setAttribute('href', hrefConPedido(checkout.href));
+    });
+    fab.addEventListener('click', function () {
+      var c = document.getElementById('uc-closed');
+      var t = avisoCerrado();
+      c.textContent = t; c.hidden = !t;
+    });
     document.getElementById('uc-close').addEventListener('click', function () { toggle(false); });
     ov.addEventListener('click', function (e) { if (e.target === ov) toggle(false); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle(false); });
