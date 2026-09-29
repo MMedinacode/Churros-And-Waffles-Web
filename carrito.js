@@ -1,5 +1,13 @@
 /* ============================================================
-   CARRITO UNIVERSAL — módulo reusable del portafolio de cafeterías
+   CARRITO CON PEDIDOS — versión extendida del carrito universal
+   ============================================================
+   ⚠️ NO ES EL MÓDULO DE TODAS LAS PÁGINAS. Es una versión aparte, hecha el
+   29-09-2026 para Churros and Waffles, que hoy es la única que la usa (ahí
+   se copia con el nombre carrito.js). Decisión de Matías: no desplegarla en
+   el portafolio; queda guardada por si otro local la necesita.
+   Lo que agrega sobre carrito.js: pedido escrito en el WhatsApp, retiro o
+   delivery, envío por zonas o por distancia, opciones por producto (salsa,
+   topping) y aviso de local cerrado. Todo se activa por configuración.
    ============================================================
    Se acopla a cualquier sitio del portafolio SIN tocar su lógica de
    render: detecta los productos ya renderizados en el DOM (.menu-item
